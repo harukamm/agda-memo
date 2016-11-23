@@ -1002,20 +1002,85 @@ pullback-monic {A}{B}{C} {f}{g} {P} {T}{t₁}{t₂} p₂∘t₁≡p₂∘t₂ = 
         pf = morC-unique→f≡g !T
 
 -- Theorem 2.3.4.
-outer-pullback : {A B A′ B′ C : obC} → {f : morC A A′} → {g : morC B A′} →
-                 {f′ : morC A′ C} → {g′ : morC B′ C} →
-                 {D : pullback f g} → {E : pullback f′ g′} → pullback (f′ ∘ f) g′
-outer-pullback {A}{B}{A′}{B′}{C} {f}{g}{f′}{g′} {D}{E} = ?
-  where D-obj = pullback.obj D
-        E-obj = pullback.obj E
-        Da : morC D-obj A
-        Da = pullback.p₁ D
-        Db : morC D-obj B
-        Db = pullback.p₂ D
-        Ea′ : morC E-obj A′
-        Ea′ = pullback.p₁ E
-        Eb′ : morC E-obj B′
-        Eb′ = pullback.p₂ E
+outer-pullback : {A₁ A₂ B₁ C : obC} →
+                 {f₁ : morC A₁ C} → {g₁ : morC B₁ C} →
+                 (D₁ : pullback f₁ g₁) →
+                 {f₂ : morC A₂ A₁} →
+                 (D₂ : pullback f₂ (pullback.p₁ D₁)) →
+                 pullback (f₁ ∘ f₂) g₁
+outer-pullback {A₁}{A₂}{B₁}{C} {f₁}{g₁} D₁ {f₂} D₂ =
+  record { obj = D₂-obj
+         ; p₁ = Da₂
+         ; p₂ = Db₁ ∘ Db₂
+         ; proj-eq = eq
+         ; proof = pf
+         }
+  where D₁-obj = pullback.obj D₁
+        D₂-obj = pullback.obj D₂
+        Da₁ : morC D₁-obj A₁
+        Da₁ = pullback.p₁ D₁
+        Db₁ : morC D₁-obj B₁
+        Db₁ = pullback.p₂ D₁
+        Da₂ : morC D₂-obj A₂
+        Da₂ = pullback.p₁ D₂
+        Db₂ : morC D₂-obj D₁-obj
+        Db₂ = pullback.p₂ D₂
+        eq : ((f₁ ∘ f₂) ∘ Da₂) ≡ (g₁ ∘ (Db₁ ∘ Db₂))
+        eq = begin
+              (f₁ ∘ f₂) ∘ Da₂
+            ≡⟨ sym ∘-assoc ⟩
+              f₁ ∘ (f₂ ∘ Da₂)
+            ≡⟨ cong (λ x → f₁ ∘ x) eq₂ ⟩
+              f₁ ∘ (Da₁ ∘ Db₂)
+            ≡⟨ ∘-assoc ⟩
+              (f₁ ∘ Da₁) ∘ Db₂
+            ≡⟨ cong (λ x → x ∘ Db₂) eq₁ ⟩
+              (g₁ ∘ Db₁) ∘ Db₂
+            ≡⟨ sym ∘-assoc ⟩
+              g₁ ∘ (Db₁ ∘ Db₂)
+            ∎
+           where eq₁ : f₁ ∘ Da₁ ≡ g₁ ∘ Db₁
+                 eq₁ = pullback.proj-eq D₁
+                 eq₂ : f₂ ∘ Da₂ ≡ Da₁ ∘ Db₂
+                 eq₂ = pullback.proj-eq D₂
+        pf : {T : obC} {h : morC T A₂} {k : morC T B₁} →
+             ((f₁ ∘ f₂) ∘ h) ≡ (g₁ ∘ k) →
+             Σ[ m-unique ∈ morC-unique T to D₂-obj ]
+             (Da₂ ∘ morC-unique_to_.m m-unique) ≡ h ×
+             ((Db₁ ∘ Db₂) ∘ morC-unique_to_.m m-unique) ≡ k
+        pf {T}{h}{k} [f₁∘f₂]∘h≡g₁∘k = proj₁ left , (proj₁ (proj₂ left) , eq′′)
+           where right : Σ[ m-unique ∈ morC-unique T to D₁-obj ]
+                        (Da₁ ∘ morC-unique_to_.m m-unique) ≡ f₂ ∘ h ×
+                        (Db₁ ∘ morC-unique_to_.m m-unique) ≡ k
+                 right = pullback.proof D₁ eq′
+                    where eq′ : f₁ ∘ (f₂ ∘ h) ≡ g₁ ∘ k
+                          eq′ = begin
+                             f₁ ∘ (f₂ ∘ h)
+                           ≡⟨ ∘-assoc ⟩
+                             (f₁ ∘ f₂) ∘ h
+                           ≡⟨ [f₁∘f₂]∘h≡g₁∘k ⟩
+                             g₁ ∘ k
+                           ∎
+                 r-mor : morC T D₁-obj
+                 r-mor = morC-unique_to_.m (proj₁ right)
+                 left : Σ[ m-unique ∈ morC-unique T to D₂-obj ]
+                        (Da₂ ∘ morC-unique_to_.m m-unique) ≡ h ×
+                        (Db₂ ∘ morC-unique_to_.m m-unique) ≡ r-mor
+                 left = pullback.proof D₂ eq′
+                    where eq′ : f₂ ∘ h ≡ Da₁ ∘ r-mor
+                          eq′ = sym (proj₁ (proj₂ right))
+                 l-mor : morC T D₂-obj
+                 l-mor = morC-unique_to_.m (proj₁ left)
+                 eq′′ : (Db₁ ∘ Db₂) ∘ l-mor ≡ k
+                 eq′′ = begin
+                     (Db₁ ∘ Db₂) ∘ l-mor
+                   ≡⟨ sym ∘-assoc ⟩
+                     Db₁ ∘ (Db₂ ∘ l-mor)
+                   ≡⟨ cong (λ x → Db₁ ∘ x) (proj₂ (proj₂ left)) ⟩
+                     Db₁ ∘ r-mor
+                   ≡⟨ proj₂ (proj₂ right) ⟩
+                     k
+                   ∎
 -- π₁π₂
 -- ι₁ι₂
 -- p₁p₂
