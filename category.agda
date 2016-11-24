@@ -1081,6 +1081,26 @@ outer-pullback {A₁}{A₂}{B₁}{C} {f₁}{g₁} D₁ {f₂} D₂ =
                    ≡⟨ proj₂ (proj₂ right) ⟩
                      k
                    ∎
+
+-- Exercise 2.3.5.
+{- Suppose that there is a commutative triangle.
+   C ----h-----> D
+    \         /
+     \       /
+      \     /
+       \   /
+        v v
+         B
+   and suppose that m and n have the following pullbacks along f:
+   E---q--->C   F---s--->D
+   |        |   |        |
+  p|        |m r|        |n
+   |        |   |        |
+   v        v   v        v
+   A---f--->B   A---f--->B
+   Show that, then, there is a unique u : E -> F
+-}
+
 -- π₁π₂
 -- ι₁ι₂
 -- p₁p₂
