@@ -1100,7 +1100,7 @@ outer-pullback {A₁}{A₂}{B₁}{C} {f₁}{g₁} D₁ {f₂} D₂ =
    A---f--->B   A---f--->B
    Show that, then, there is a unique u : E -> F
 -}
-
+ 
 -- π₁π₂
 -- ι₁ι₂
 -- p₁p₂
