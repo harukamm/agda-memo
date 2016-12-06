@@ -102,17 +102,17 @@ reverse []       = []
 reverse (x ∷ xs) = (reverse xs) ++ (x ∷ [])
 
 -- right identity
-rid-rev : ∀{l}{A : Set l} → {xs : List A} → xs ++ [] ≡ xs
-rid-rev {xs = []}     = begin
+rid-++ : ∀{l}{A : Set l} → {xs : List A} → xs ++ [] ≡ xs
+rid-++ {xs = []}     = begin
       [] ++ []
     ≡⟨ refl ⟩
       []
     ∎
-rid-rev {xs = n ∷ ns} = begin
+rid-++ {xs = n ∷ ns} = begin
       (n ∷ ns) ++ []
     ≡⟨ refl ⟩
       n ∷ (ns ++ [])
-    ≡⟨ cong (λ e → n ∷ e) (rid-rev {xs = ns}) ⟩
+    ≡⟨ cong (λ e → n ∷ e) (rid-++ {xs = ns}) ⟩
       n ∷ ns
     ∎
 
@@ -121,7 +121,7 @@ dist-rev {xs = []} {ys}     = begin
       reverse ([] ++ ys)
     ≡⟨ refl ⟩
       reverse ys
-    ≡⟨ sym rid-rev ⟩
+    ≡⟨ sym rid-++ ⟩
       reverse ys ++ []
     ∎
 dist-rev {xs = n ∷ ns} {ys} = begin
@@ -336,7 +336,7 @@ all p (x ∷ xs) = p x ∧ all p xs
 --}
 
 -- 5 すでに証明済み
--- rid-rev
+-- rid-++
 -- assoc-++
 
 -- 6
