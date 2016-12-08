@@ -331,7 +331,7 @@ record exist-unique-P {A : Set} (P : A → Set) : Set where
   field
     ! : A
     proof : P !
-    unique : (o : A) → P o → ! ≡ o
+    unique : (o : A) → P o → o ≡ !
 
 record terminal (one : obC) : Set where
   field
@@ -920,6 +920,18 @@ cproduct-sym {A}{B} {A+B}{B+A} =
         p2 : g ∘ f ≡ id A+[B+C]-obj
         p2 = unique→id A+[B+C]→A+[B+C]-unique
 
+{-
+  record exist-unique-P {A : Set} (P : A → Set) : Set where
+  field
+    ! : A
+    proof : P !
+    unique : (o : A) → P o → o ≡ !
+
+  record morC-unique_to_ (A B : obC) : Set where
+  field
+    m : morC A B
+    unique : (m′ : morC A B) → m′ ≡ m
+-}
 record pullback {A B C : obC} (f : morC A C) (g : morC B C) : Set where
   field
     obj : obC -- A Xc B
@@ -927,13 +939,40 @@ record pullback {A B C : obC} (f : morC A C) (g : morC B C) : Set where
     p₂ : morC obj B
     proj-eq : f ∘ p₁ ≡ g ∘ p₂
     proof : {T : obC} → {h : morC T A} → {k : morC T B} → f ∘ h ≡ g ∘ k →
-            Σ[ m-unique ∈ morC-unique T to obj ]
-            p₁ ∘ morC-unique_to_.m m-unique ≡ h × p₂ ∘ morC-unique_to_.m m-unique ≡ k
+            exist-unique-P {morC T obj} (λ m → p₁ ∘ m ≡ h × p₂ ∘ m ≡ k)
 
+exist-unique→f≡g : {A : Set} → {P : A → Set} → exist-unique-P {A} P →
+                   {f g : A} → P f → P g → f ≡ g
+exist-unique→f≡g {A}{P} eu {f}{g} f-pf g-pf = ≡-trans eq1 (sym eq2)
+  where ! = exist-unique-P.! eu
+        eq1 : f ≡ !
+        eq1 = exist-unique-P.unique eu f f-pf
+        eq2 : g ≡ !
+        eq2 = exist-unique-P.unique eu g g-pf
+
+{-
 pullback-unique-refl : {A B C : obC} → {f : morC A C} → {g : morC B C} →
-                       (p : pullback f g) → morC-unique (pullback.obj p) to (pullback.obj p)
-pullback-unique-refl {A}{B}{C} {f}{g} D = proj₁ (pullback.proof D eq)
-  where eq = pullback.proj-eq D
+                       (D : pullback f g) → morC-unique (pullback.obj D) to (pullback.obj D)
+のような関数がほしいが、これは、idR (f ∘ id A ≡ f) の一般形
+つまり、全ての m : A → A に対して、 f ∘ m ≡ f を示そうとしているようなものである。
+-}
+pullback-id : {A B C : obC} → {f : morC A C} → {g : morC B C} →
+              (D : pullback f g) →
+              {t : morC (pullback.obj D) (pullback.obj D)} →
+              pullback.p₁ D ∘ t ≡ pullback.p₁ D × pullback.p₂ D ∘ t ≡ pullback.p₂ D →
+              t ≡ id (pullback.obj D)
+pullback-id {A}{B}{C} {f}{g} D {t} t-proj-eq = ≡-trans t≡! (sym id≡!)
+  where p₁ = pullback.p₁ D
+        p₂ = pullback.p₂ D
+        obj = pullback.obj D
+        eq = pullback.proj-eq D
+        eu : exist-unique-P (λ m → p₁ ∘ m ≡ p₁ × p₂ ∘ m ≡ p₂)
+        eu = pullback.proof D eq
+        ! = exist-unique-P.! eu
+        id≡! : id obj ≡ !
+        id≡! = exist-unique-P.unique eu (id obj) (idR , idR)
+        t≡! : t ≡ !
+        t≡! = exist-unique-P.unique eu t t-proj-eq
 
 -- Theorem 2.3.2
 {- A pullback for a given pair of morphisms is determined up to isomorphism. -}
@@ -942,64 +981,116 @@ pullback-unique : {A B C : obC} → {f : morC A C} → {g : morC B C} →
 pullback-unique {A}{B}{C} {f}{g} {D}{E} =
   record { f = !D→E
          ; g = !E→D
-         ; proof = record { invR = p1
-                          ; invL = p2
+         ; proof = record { invR = pullback-id E eq1
+                          ; invL = pullback-id D eq2
                           }
          }
   where D-obj = pullback.obj D
         E-obj = pullback.obj E
-        Da : morC D-obj A
         Da = pullback.p₁ D
-        Db : morC D-obj B
         Db = pullback.p₂ D
-        Ea : morC E-obj A
         Ea = pullback.p₁ E
-        Eb : morC E-obj B
         Eb = pullback.p₂ E
         D-eq : f ∘ Da ≡ g ∘ Db
         D-eq = pullback.proj-eq D
         E-eq : f ∘ Ea ≡ g ∘ Eb
         E-eq = pullback.proj-eq E
-        !E→D : morC E-obj D-obj
-        !E→D = morC-unique_to_.m (proj₁ (pullback.proof D E-eq))
+        !E→D-unique : exist-unique-P (λ m → Da ∘ m ≡ Ea × Db ∘ m ≡ Eb)
+        !E→D-unique = pullback.proof D E-eq
+        !D→E-unique : exist-unique-P (λ m → Ea ∘ m ≡ Da × Eb ∘ m ≡ Db)
+        !D→E-unique = pullback.proof E D-eq
         !D→E : morC D-obj E-obj
-        !D→E = morC-unique_to_.m (proj₁ (pullback.proof E D-eq))
-        !D = pullback-unique-refl D
-        !E = pullback-unique-refl E
-        p1 : !D→E ∘ !E→D ≡ id E-obj
-        p1 = unique→id !E
-        p2 : !E→D ∘ !D→E ≡ id D-obj
-        p2 = unique→id !D
+        !D→E = exist-unique-P.! !D→E-unique
+        !E→D : morC E-obj D-obj
+        !E→D = exist-unique-P.! !E→D-unique
+        !E→D-pf : Da ∘ !E→D ≡ Ea × Db ∘ !E→D ≡ Eb
+        !E→D-pf = exist-unique-P.proof !E→D-unique
+        !D→E-pf : Ea ∘ !D→E ≡ Da × Eb ∘ !D→E ≡ Db
+        !D→E-pf = exist-unique-P.proof !D→E-unique
+        eq1 : Ea ∘ (!D→E ∘ !E→D) ≡ Ea × Eb ∘ (!D→E ∘ !E→D) ≡ Eb
+        eq1 = (begin
+              Ea ∘ (!D→E ∘ !E→D)
+            ≡⟨ ∘-assoc ⟩
+              (Ea ∘ !D→E) ∘ !E→D
+            ≡⟨ cong (λ e → e ∘ !E→D) (proj₁ !D→E-pf) ⟩
+              Da ∘ !E→D
+            ≡⟨ proj₁ !E→D-pf ⟩
+              Ea
+            ∎) , (begin
+              Eb ∘ (!D→E ∘ !E→D)
+            ≡⟨ ∘-assoc ⟩
+              (Eb ∘ !D→E) ∘ !E→D
+            ≡⟨ cong (λ e → e ∘ !E→D) (proj₂ !D→E-pf) ⟩
+              Db ∘ !E→D
+            ≡⟨ proj₂ !E→D-pf ⟩
+              Eb
+            ∎)
+        eq2 : Da ∘ (!E→D ∘ !D→E) ≡ Da × Db ∘ (!E→D ∘ !D→E) ≡ Db
+        eq2 = (begin
+              Da ∘ (!E→D ∘ !D→E)
+            ≡⟨ ∘-assoc ⟩
+              (Da ∘ !E→D) ∘ !D→E
+            ≡⟨ cong (λ e → e ∘ !D→E) (proj₁ !E→D-pf) ⟩
+              Ea ∘ !D→E
+            ≡⟨ proj₁ !D→E-pf ⟩
+              Da
+            ∎) , (begin
+              Db ∘ (!E→D ∘ !D→E)
+            ≡⟨ ∘-assoc ⟩
+              (Db ∘ !E→D) ∘ !D→E
+            ≡⟨ cong (λ e → e ∘ !D→E) (proj₂ !E→D-pf) ⟩
+              Eb ∘ !D→E
+            ≡⟨ proj₂ !D→E-pf ⟩
+              Db
+            ∎)
 
 -- Theorem 2.3.3.
 pullback-monic : {A B C : obC} → {f : morC A C} → {g : morC B C} →
-                 {D : pullback f g} → monic (pullback.p₂ D)
-pullback-monic {A}{B}{C} {f}{g} {P} {T}{t₁}{t₂} p₂∘t₁≡p₂∘t₂ = pf
-  where P-obj = pullback.obj P
-        p₁ = pullback.p₁ P
-        p₂ = pullback.p₂ P
+                 {D : pullback f g} → monic f → monic (pullback.p₂ D)
+pullback-monic {A}{B}{C} {f}{g} {D} monic-f {T}{t₁}{t₂} p₂∘t₁≡p₂∘t₂ = pf
+  where D-obj = pullback.obj D
+        p₁ = pullback.p₁ D
+        p₂ = pullback.p₂ D
         h : morC T A
         h = p₁ ∘ t₂
         k : morC T B
         k = p₂ ∘ t₁
-        P-eq : f ∘ p₁ ≡ g ∘ p₂
-        P-eq = pullback.proj-eq P
+        D-eq : f ∘ p₁ ≡ g ∘ p₂
+        D-eq = pullback.proj-eq D
         eq : f ∘ h ≡ g ∘ k
         eq = begin
               f ∘ (p₁ ∘ t₂)
             ≡⟨ ∘-assoc ⟩
               (f ∘ p₁) ∘ t₂
-            ≡⟨ cong (λ x → x ∘ t₂) P-eq ⟩
+            ≡⟨ cong (λ x → x ∘ t₂) D-eq ⟩
               (g ∘ p₂) ∘ t₂
             ≡⟨ sym ∘-assoc ⟩
               g ∘ (p₂ ∘ t₂)
             ≡⟨ cong (λ x → g ∘ x) (sym p₂∘t₁≡p₂∘t₂) ⟩
               g ∘ (p₂ ∘ t₁)
             ∎
-        !T : morC-unique T to P-obj
-        !T = proj₁ (pullback.proof P eq)
+        !T→D-unique : exist-unique-P (λ m → p₁ ∘ m ≡ h × p₂ ∘ m ≡ k)
+        !T→D-unique = pullback.proof D eq
+        !T→D : morC T D-obj
+        !T→D = exist-unique-P.! !T→D-unique
+        eq1 : p₁ ∘ t₁ ≡ h × p₂ ∘ t₁ ≡ k
+        eq1 = monic-f e , refl
+          where e : f ∘ (p₁ ∘ t₁) ≡ f ∘ h
+                e = begin
+                      f ∘ (p₁ ∘ t₁)
+                    ≡⟨ ∘-assoc ⟩
+                      (f ∘ p₁) ∘ t₁
+                    ≡⟨ cong (λ e → e ∘ t₁) D-eq ⟩
+                      (g ∘ p₂) ∘ t₁
+                    ≡⟨ sym ∘-assoc ⟩
+                      g ∘ (p₂ ∘ t₁)
+                    ≡⟨ sym eq ⟩
+                      f ∘ (p₁ ∘ t₂)
+                    ∎
+        eq2 : p₁ ∘ t₂ ≡ h × p₂ ∘ t₂ ≡ k
+        eq2 = refl , sym p₂∘t₁≡p₂∘t₂
         pf : t₁ ≡ t₂
-        pf = morC-unique→f≡g !T
+        pf = exist-unique→f≡g !T→D-unique eq1 eq2
 
 -- Theorem 2.3.4.
 outer-pullback : {A₁ A₂ B₁ C : obC} →
@@ -1045,13 +1136,31 @@ outer-pullback {A₁}{A₂}{B₁}{C} {f₁}{g₁} D₁ {f₂} D₂ =
                  eq₂ = pullback.proj-eq D₂
         pf : {T : obC} {h : morC T A₂} {k : morC T B₁} →
              ((f₁ ∘ f₂) ∘ h) ≡ (g₁ ∘ k) →
-             Σ[ m-unique ∈ morC-unique T to D₂-obj ]
-             (Da₂ ∘ morC-unique_to_.m m-unique) ≡ h ×
-             ((Db₁ ∘ Db₂) ∘ morC-unique_to_.m m-unique) ≡ k
-        pf {T}{h}{k} [f₁∘f₂]∘h≡g₁∘k = proj₁ left , (proj₁ (proj₂ left) , eq′′)
-           where right : Σ[ m-unique ∈ morC-unique T to D₁-obj ]
-                        (Da₁ ∘ morC-unique_to_.m m-unique) ≡ f₂ ∘ h ×
-                        (Db₁ ∘ morC-unique_to_.m m-unique) ≡ k
+             exist-unique-P (λ m → Da₂ ∘ m ≡ h × (Db₁ ∘ Db₂) ∘ m ≡ k)
+        pf {T}{h}{k} [f₁∘f₂]∘h≡g₁∘k =
+            record { ! = l-mor
+                   ; proof = proj₁ (exist-unique-P.proof left) , eq′′
+                   ; unique = λ m′ m′-pf →
+                              exist-unique-P.unique left m′ (proj₁ m′-pf ,
+                                exist-unique-P.unique right (Db₂ ∘ m′) ((begin
+                                    Da₁ ∘ (Db₂ ∘ m′)
+                                  ≡⟨ ∘-assoc ⟩
+                                    (Da₁ ∘ Db₂) ∘ m′
+                                  ≡⟨ cong (λ e → e ∘ m′) (sym (pullback.proj-eq D₂)) ⟩
+                                    (f₂ ∘ Da₂) ∘ m′
+                                  ≡⟨ sym ∘-assoc ⟩
+                                    f₂ ∘ (Da₂ ∘ m′)
+                                  ≡⟨ cong (λ e → f₂ ∘ e) (proj₁ m′-pf) ⟩
+                                    f₂ ∘ h
+                                  ∎), (begin
+                                    Db₁ ∘ (Db₂ ∘ m′)
+                                  ≡⟨ ∘-assoc ⟩
+                                    (Db₁ ∘ Db₂) ∘ m′
+                                  ≡⟨ proj₂ m′-pf ⟩
+                                    k
+                                  ∎)))
+                   }
+           where right : exist-unique-P (λ m → Da₁ ∘ m ≡ f₂ ∘ h × Db₁ ∘ m ≡ k)
                  right = pullback.proof D₁ eq′
                     where eq′ : f₁ ∘ (f₂ ∘ h) ≡ g₁ ∘ k
                           eq′ = begin
@@ -1062,23 +1171,21 @@ outer-pullback {A₁}{A₂}{B₁}{C} {f₁}{g₁} D₁ {f₂} D₂ =
                              g₁ ∘ k
                            ∎
                  r-mor : morC T D₁-obj
-                 r-mor = morC-unique_to_.m (proj₁ right)
-                 left : Σ[ m-unique ∈ morC-unique T to D₂-obj ]
-                        (Da₂ ∘ morC-unique_to_.m m-unique) ≡ h ×
-                        (Db₂ ∘ morC-unique_to_.m m-unique) ≡ r-mor
+                 r-mor = exist-unique-P.! right
+                 left : exist-unique-P (λ m → Da₂ ∘ m ≡ h × Db₂ ∘ m ≡ r-mor)
                  left = pullback.proof D₂ eq′
                     where eq′ : f₂ ∘ h ≡ Da₁ ∘ r-mor
-                          eq′ = sym (proj₁ (proj₂ right))
+                          eq′ = sym (proj₁ (exist-unique-P.proof right))
                  l-mor : morC T D₂-obj
-                 l-mor = morC-unique_to_.m (proj₁ left)
+                 l-mor = exist-unique-P.! left
                  eq′′ : (Db₁ ∘ Db₂) ∘ l-mor ≡ k
                  eq′′ = begin
                      (Db₁ ∘ Db₂) ∘ l-mor
                    ≡⟨ sym ∘-assoc ⟩
                      Db₁ ∘ (Db₂ ∘ l-mor)
-                   ≡⟨ cong (λ x → Db₁ ∘ x) (proj₂ (proj₂ left)) ⟩
+                   ≡⟨ cong (λ x → Db₁ ∘ x) (proj₂ (exist-unique-P.proof left)) ⟩
                      Db₁ ∘ r-mor
-                   ≡⟨ proj₂ (proj₂ right) ⟩
+                   ≡⟨ proj₂ (exist-unique-P.proof right) ⟩
                      k
                    ∎
 
@@ -1105,4 +1212,4 @@ outer-pullback {A₁}{A₂}{B₁}{C} {f₁}{g₁} D₁ {f₂} D₂ =
 -- ι₁ι₂
 -- p₁p₂
 -- proj₁ proj₂
--- λ ₁₂
+-- ∎ λ ₁₂
