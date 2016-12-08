@@ -932,6 +932,7 @@ cproduct-sym {A}{B} {A+B}{B+A} =
     m : morC A B
     unique : (m′ : morC A B) → m′ ≡ m
 -}
+
 record pullback {A B C : obC} (f : morC A C) (g : morC B C) : Set where
   field
     obj : obC -- A Xc B
@@ -1194,20 +1195,49 @@ outer-pullback {A₁}{A₂}{B₁}{C} {f₁}{g₁} D₁ {f₂} D₂ =
    C ----h-----> D
     \         /
      \       /
-      \     /
+     m\     /n
        \   /
         v v
          B
    and suppose that m and n have the following pullbacks along f:
    E---q--->C   F---s--->D
    |        |   |        |
-  p|        |m r|        |n
+  p|   D₁   |m r|   D₂   |n
    |        |   |        |
    v        v   v        v
    A---f--->B   A---f--->B
    Show that, then, there is a unique u : E -> F
+   that makes the following diagrams commute:
+   (Omitted)
 -}
- 
+pullback-dbl : {A B C D : obC} →
+               {h : morC C D} → {m : morC C B} → {n : morC D B} →
+               {_ : m ≡ n ∘ h} →
+               {f : morC A B} →
+               {D₁ : pullback f m} → {D₂ : pullback f n} →
+               exist-unique-P
+                 (λ u′ → (pullback.p₁ D₂) ∘ u′ ≡ (pullback.p₁ D₁) ×
+                    (pullback.p₂ D₂) ∘ u′ ≡ h ∘ (pullback.p₂ D₁))
+pullback-dbl {A}{B}{C}{D} {h}{m}{n} {m≡n∘h} {f} {D₁}{D₂} = !E→F-unique
+  where E = pullback.obj D₁
+        F = pullback.obj D₂
+        p = pullback.p₁ D₁
+        q = pullback.p₂ D₁
+        r = pullback.p₁ D₂
+        s = pullback.p₂ D₂
+        eq : f ∘ p ≡ n ∘ (h ∘ q)
+        eq = begin
+            f ∘ p
+          ≡⟨ pullback.proj-eq D₁ ⟩
+            m ∘ q
+          ≡⟨ cong (λ e → e ∘ q) m≡n∘h ⟩
+            (n ∘ h) ∘ q
+          ≡⟨ sym ∘-assoc ⟩
+            n ∘ (h ∘ q)
+          ∎
+        !E→F-unique : exist-unique-P (λ u′ → r ∘ u′ ≡ p × s ∘ u′ ≡ (h ∘ q))
+        !E→F-unique = pullback.proof D₂ eq
+
 -- π₁π₂
 -- ι₁ι₂
 -- p₁p₂
