@@ -620,21 +620,17 @@ x-assoc {A}{B}{C} {BxC} {Ax[BxC]} {AxB} {[AxB]xC} =
         BxA→BxA-unique : morC-unique BxA-obj to BxA-obj
         BxA→BxA-unique = bproduct-unique-refl BxA
 
-obC-bproduct : Set
-obC-bproduct = (A B : obC) → A X B
-
 -- Theorem 2.2.6
 {- In a category C with binary products, any object A is isomorphic to 1 x A -}
-A≅1xA : {p : obC-bproduct} → {A one : obC} → {t : terminal one} → A ≅ _X_.obj (p one A)
-A≅1xA {p} {A} {one} {t} =
+A≅1xA : {A one : obC} → {1xA : one X A} → {t : terminal one} → A ≅ _X_.obj 1xA
+A≅1xA {A}{one} {1xA} {t} =
   record { f = ⟨!A,idA⟩
          ; g = π₂-1xA
          ; proof = record { invR = p1
                           ; invL = p2
                           }
          }
-  where 1xA = p one A
-        1xA-obj = _X_.obj 1xA
+  where 1xA-obj = _X_.obj 1xA
         π₂-1xA : morC 1xA-obj A
         π₂-1xA = _X_.π₂ 1xA
         !A-unique : morC-unique A to one
