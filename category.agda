@@ -1234,6 +1234,133 @@ pullback-dbl {A}{B}{C}{D} {h}{m}{n} {m≡n∘h} {f} {D₁}{D₂} = !E→F-unique
         !E→F-unique : exist-unique-P (λ u′ → r ∘ u′ ≡ p × s ∘ u′ ≡ (h ∘ q))
         !E→F-unique = pullback.proof D₂ eq
 
+record equalizer {A B : obC} (f g : morC A B) : Set where
+  field
+    E : obC
+    e : morC E A
+    eq : f ∘ e ≡ g ∘ e
+    proof : {T : obC} → {h : morC T A} → f ∘ h ≡ g ∘ h →
+            exist-unique-P {morC T E} (λ k → h ≡ e ∘ k)
+
+{- Theorem 2.4.2 very equalizer is monic. -}
+equalizer→monic : {A B : obC} → {f g : morC A B} →
+                  (elz : equalizer f g) → monic (equalizer.e elz)
+equalizer→monic {A}{B} {f}{g} elz {T}{t₁}{t₂} e∘t₁≡e∘t₂ = pf
+  where E = equalizer.E elz
+        e = equalizer.e elz
+        eq : f ∘ (e ∘ t₁) ≡ g ∘ (e ∘ t₁)
+        eq = begin
+            f ∘ (e ∘ t₁)
+          ≡⟨ ∘-assoc ⟩
+            (f ∘ e) ∘ t₁
+          ≡⟨ cong (λ e → e ∘ t₁) (equalizer.eq elz) ⟩
+            (g ∘ e) ∘ t₁
+          ≡⟨ sym ∘-assoc ⟩
+            g ∘ (e ∘ t₁)
+          ∎
+        eu : exist-unique-P (λ k → (e ∘ t₁) ≡ e ∘ k)
+        eu = equalizer.proof elz eq
+        pf : t₁ ≡ t₂
+        pf = exist-unique→f≡g eu refl e∘t₁≡e∘t₂
+
+-- binary product exists for any two objects.
+obC-bproduct : Set
+obC-bproduct = (A B : obC) → A X B
+
+-- equalizer exists for any two morphisms.
+obC-equalizer : Set
+obC-equalizer = {A B : obC} → (f g : morC A B) → equalizer f g
+
+{- Theorem 2.4.3
+   if a category has all binary products and equalizers for any two morphisms,
+   then it has a pullback for any two morphisms f : A -> C and g : B -> C -}
+bp-elz→pullback : {_ : obC-bproduct} → {_ : obC-equalizer} →
+                  {A B C : obC} → {f : morC A C} → {g : morC B C} →
+                  pullback f g
+bp-elz→pullback {bp}{el} {A}{B}{C} {f}{g} =
+  record { obj = E
+         ; p₁ = p₁
+         ; p₂ = p₂
+         ; proj-eq = proj-eq
+         ; proof = proof
+         }
+  where AxB = bp A B
+        AxB-obj = _X_.obj AxB
+        π₁ = _X_.π₁ AxB
+        π₂ = _X_.π₂ AxB
+        elz = el (f ∘ π₁) (g ∘ π₂)
+        E = equalizer.E elz
+        e = equalizer.e elz
+        p₁ = π₁ ∘ e
+        p₂ = π₂ ∘ e
+        elz-eq : (f ∘ π₁) ∘ e ≡ (g ∘ π₂) ∘ e
+        elz-eq = equalizer.eq elz
+        proj-eq : f ∘ p₁ ≡ g ∘ p₂
+        proj-eq = begin
+            f ∘ (π₁ ∘ e)
+          ≡⟨ ∘-assoc ⟩
+            (f ∘ π₁) ∘ e
+          ≡⟨ elz-eq ⟩
+            (g ∘ π₂) ∘ e
+          ≡⟨ sym ∘-assoc ⟩
+            g ∘ (π₂ ∘ e)
+          ∎
+        proof : {T : obC} {s : morC T A} {t : morC T B} →
+                f ∘ s ≡ g ∘ t →
+                exist-unique-P {morC T E} (λ m → (p₁ ∘ m) ≡ s × (p₂ ∘ m) ≡ t)
+        proof {T}{s}{t} f∘s≡g∘t =
+          record { ! = !
+                 ; proof = (begin
+                      (π₁ ∘ e) ∘ !
+                    ≡⟨ sym ∘-assoc ⟩
+                      π₁ ∘ (e ∘ !)
+                    ≡⟨ cong (λ x → π₁ ∘ x) (sym eq3) ⟩
+                      π₁ ∘ T→AxB
+                    ≡⟨ proj₁ eq1 ⟩
+                      s
+                    ∎) , (begin
+                      (π₂ ∘ e) ∘ !
+                    ≡⟨ sym ∘-assoc ⟩
+                      π₂ ∘ (e ∘ !)
+                    ≡⟨ cong (λ x → π₂ ∘ x) (sym eq3) ⟩
+                      π₂ ∘ T→AxB
+                    ≡⟨ proj₂ eq1 ⟩
+                      t
+                    ∎)
+                 ; unique = λ m′ m′-pf →
+                          exist-unique-P.unique eu m′ (begin
+                            T→AxB
+                          ≡⟨ eq3 ⟩
+                            e ∘ !
+                          ≡⟨ morC-unique→f≡g T→AxB-unique ⟩
+                            e ∘ m′
+                          ∎)
+                 }
+          where T→AxB-unique : morC-unique T to AxB-obj
+                T→AxB-unique = proj₁ (_X_.proof AxB {T}{s}{t})
+                T→AxB = morC-unique_to_.m T→AxB-unique
+                eq1 : π₁ ∘ T→AxB ≡ s × π₂ ∘ T→AxB ≡ t
+                eq1 = proj₂ (_X_.proof AxB {T}{s}{t})
+                eq2 : (f ∘ π₁) ∘ T→AxB ≡ (g ∘ π₂) ∘ T→AxB
+                eq2 = begin
+                    (f ∘ π₁) ∘ T→AxB
+                  ≡⟨ sym ∘-assoc ⟩
+                    f ∘ (π₁ ∘ T→AxB)
+                  ≡⟨ cong (λ e → f ∘ e) (proj₁ eq1) ⟩
+                    f ∘ s
+                  ≡⟨ f∘s≡g∘t ⟩
+                    g ∘ t
+                  ≡⟨ cong (λ e → g ∘ e) (sym (proj₂ eq1)) ⟩
+                    g ∘ (π₂ ∘ T→AxB)
+                  ≡⟨ ∘-assoc ⟩
+                    (g ∘ π₂) ∘ T→AxB
+                  ∎
+                eu : exist-unique-P (λ k → T→AxB ≡ e ∘ k)
+                eu = equalizer.proof elz eq2
+                ! = exist-unique-P.! eu
+                eq3 : T→AxB ≡ e ∘ !
+                eq3 = exist-unique-P.proof eu
+
 -- π₁π₂
 -- ι₁ι₂
 -- p₁p₂
