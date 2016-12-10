@@ -449,48 +449,41 @@ split-epic-A→⊘ {A} {⊘} ini⊘ {f} =
         h≡m = exist-unique.unique pf h
         
 -- exercise 2.1.8
-{-compo-unique : {A B C : obC} → morC-unique A to B → morC-unique B to C →
-               (h : morC A C) → (h′ : morC A C) → h ≡ h′
-compo-unique {A}{B}{C} A→B-unique B→C-unique h h′ = {!!}
-  where A→B : morC A B
-        A→B = morC-unique_to_.m A→B-unique
-        B→C : morC B C
-        B→C = morC-unique_to_.m B→C-unique
-        B→C∘A→B : morC A C
-        B→C∘A→B = B→C ∘ A→B-}
 {-
 ter-ini-zero : {⊘ one : obC} → initial ⊘ → terminal one → morC one ⊘ → zero ⊘ × zero one
-ter-ini-zero {⊘} {one} ini⊘ ter1 1→⊘ = zero⊘ , zero1
-  where p1 : morC-unique ⊘ to one
+ter-ini-zero {⊘} {one} ini⊘ ter1 f = zero⊘ , zero1
+  where p1 : exist-unique (morC ⊘ one)
         p1 = terminal.proof ter1 {⊘}
-        p2 : morC-unique ⊘ to one
+        p2 : exist-unique (morC ⊘ one)
         p2 = initial.proof ini⊘ {one}
         ⊘→1 : morC ⊘ one
-        ⊘→1 = morC-unique_to_.m p1
-        ⊘→A-unique-m : {A : obC} → morC ⊘ A
-        ⊘→A-unique-m {A} = morC-unique_to_.m (initial.proof ini⊘ {A})
-        A→1-unique-m : {A : obC} → morC A one
-        A→1-unique-m {A} = morC-unique_to_.m (terminal.proof ter1 {A})
-        ini1 : initial one -- morC-unique one to A
-        ini1 = record { proof = λ {A} → 
-                         record { m = ⊘→A-unique-m ∘ 1→⊘
-                                ; unique = λ m′ → {!!}
-                                }
-                }
+        ⊘→1 = exist-unique.! p1
+        pf1 : {A : obC} → exist-unique (morC one A)
+        pf1 {A} =
+          record { ! = ⊘→A ∘ f
+                 ; unique = λ m → {!!}
+                 }
+          where ⊘→A-unique : exist-unique (morC ⊘ A)
+                ⊘→A-unique = initial.proof ini⊘ {A}
+                ⊘→A : morC ⊘ A
+                ⊘→A = exist-unique.! ⊘→A-unique
+        ini1 : initial one
+        ini1 = record { proof = pf1 }
+        pf2 : {A : obC} → exist-unique (morC A ⊘)
+        pf2 {A} =
+          record { ! = f ∘ A→1
+                 ; unique = λ m → {!!}
+                 }
+           where A→1-unique : exist-unique (morC A one)
+                 A→1-unique = terminal.proof ter1 {A}
+                 A→1 : morC A one
+                 A→1 = exist-unique.! A→1-unique
         ter⊘ : terminal ⊘
-        ter⊘ = record { proof = λ {A} → 
-                         record { m = 1→⊘ ∘ A→1-unique-m
-                                ; unique = λ m′ → {!!}
-                                }
-                }
+        ter⊘ = record { proof = pf2 }
         zero⊘ : zero ⊘
-        zero⊘ = record { t = ter⊘
-                       ; i = ini⊘
-                       }
+        zero⊘ = record { t = ter⊘ ; i = ini⊘ }
         zero1 : zero one
-        zero1 = record { t = ter1
-                       ; i = ini1
-                       }
+        zero1 = record { t = ter1 ; i = ini1 }
 -}
 
 record _X_ (A B : obC) : Set where
