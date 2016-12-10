@@ -326,7 +326,11 @@ record morC-unique_to_ (A B : obC) : Set where
     m : morC A B
     unique : (m′ : morC A B) → m′ ≡ m
 
--- P を満たすものが unique に存在する
+record exist-unique (A : Set) : Set where
+  field
+    ! : A
+    unique : (o : A) → o ≡ !
+
 record exist-unique-P {A : Set} (P : A → Set) : Set where
   field
     ! : A
@@ -335,11 +339,11 @@ record exist-unique-P {A : Set} (P : A → Set) : Set where
 
 record terminal (one : obC) : Set where
   field
-    proof : {A : obC} → morC-unique A to one
+    proof : {A : obC} → exist-unique (morC A one)
 
 record initial (⊘ : obC) : Set where
   field
-    proof : {A : obC} → morC-unique ⊘ to A
+    proof : {A : obC} → exist-unique (morC ⊘ A)
 
 record zero (z : obC) : Set where
   field
@@ -347,8 +351,18 @@ record zero (z : obC) : Set where
     i : initial z
 
 unique→id : {A B : obC} → {f : morC A B} → {g : morC B A} →
-            morC-unique A to A → g ∘ f ≡ id A
+            exist-unique (morC A A) → g ∘ f ≡ id A
 unique→id {A} {B} {f} {g} uni-A→A = ≡-trans g∘f≡A→A (sym idA≡A→A)
+    where A→A : morC A A
+          A→A = exist-unique.! uni-A→A
+          idA≡A→A : id A ≡ A→A
+          idA≡A→A = exist-unique.unique uni-A→A (id A)
+          g∘f≡A→A : g ∘ f ≡ A→A
+          g∘f≡A→A = exist-unique.unique uni-A→A (g ∘ f)
+
+morC-unique→id : {A B : obC} → {f : morC A B} → {g : morC B A} →
+                 morC-unique A to A → g ∘ f ≡ id A
+morC-unique→id {A} {B} {f} {g} uni-A→A = ≡-trans g∘f≡A→A (sym idA≡A→A)
     where A→A : morC A A
           A→A = morC-unique_to_.m uni-A→A
           idA≡A→A : id A ≡ A→A
@@ -365,17 +379,17 @@ terminal-iso {one} {one′} t t′ =
                           ; invL = unique→id {one} {one′} { !1′} { !1} 1→1-unique
                           }
          }
-    where 1′→1-unique : morC-unique one′ to one
+    where 1′→1-unique : exist-unique (morC one′ one)
           1′→1-unique = terminal.proof t {one′}
-          1→1′-unique : morC-unique one to one′
+          1→1′-unique : exist-unique (morC one one′)
           1→1′-unique = terminal.proof t′ {one}
-          !1 : morC one′ one            -- a unique morC one′ to one
-          !1 = morC-unique_to_.m 1′→1-unique
-          !1′ : morC one one′           -- a unique morC one to one′
-          !1′ = morC-unique_to_.m 1→1′-unique
-          1→1-unique : morC-unique one to one
+          !1 : morC one′ one            -- a unique morC one′ one
+          !1 = exist-unique.! 1′→1-unique
+          !1′ : morC one one′           -- a unique morC one one′
+          !1′ = exist-unique.! 1→1′-unique
+          1→1-unique : exist-unique (morC one one)
           1→1-unique = terminal.proof t {one}
-          1′→1′-unique : morC-unique one′ to one′
+          1′→1′-unique : exist-unique (morC one′ one′)
           1′→1′-unique = terminal.proof t′ {one′}
 
 -- Theorem 2.1.5
@@ -387,19 +401,19 @@ initial-iso {⊘} {⊘′} i i′ =
                           ; invL = !⊘∘!⊘′≡id⊘
                           }
          }
-    where ⊘→⊘′-unique : morC-unique ⊘ to ⊘′
+    where ⊘→⊘′-unique : exist-unique (morC ⊘ ⊘′)
           ⊘→⊘′-unique = initial.proof i {⊘′}
           !⊘′ : morC ⊘ ⊘′
-          !⊘′ = morC-unique_to_.m (⊘→⊘′-unique)
-          ⊘′→⊘-unique : morC-unique ⊘′ to ⊘
+          !⊘′ = exist-unique.! (⊘→⊘′-unique)
+          ⊘′→⊘-unique : exist-unique (morC ⊘′ ⊘)
           ⊘′→⊘-unique = initial.proof i′ {⊘}
           !⊘ : morC ⊘′ ⊘
-          !⊘ = morC-unique_to_.m (⊘′→⊘-unique)
-          ⊘→⊘-unique : morC-unique ⊘ to ⊘
+          !⊘ = exist-unique.! (⊘′→⊘-unique)
+          ⊘→⊘-unique : exist-unique (morC ⊘ ⊘)
           ⊘→⊘-unique = initial.proof i {⊘}
           !⊘∘!⊘′≡id⊘ : !⊘ ∘ !⊘′ ≡ id ⊘
           !⊘∘!⊘′≡id⊘ = unique→id {⊘} {⊘′} { !⊘′} { !⊘} ⊘→⊘-unique
-          ⊘′→⊘′-unique : morC-unique ⊘′ to ⊘′
+          ⊘′→⊘′-unique : exist-unique (morC ⊘′ ⊘′)
           ⊘′→⊘′-unique = initial.proof i′ {⊘′}
           !⊘′∘!⊘≡id⊘′ : !⊘′ ∘ !⊘ ≡ id ⊘′
           !⊘′∘!⊘≡id⊘′ = unique→id {⊘′} {⊘} { !⊘} { !⊘′} ⊘′→⊘′-unique
@@ -410,11 +424,11 @@ split-epic-A→⊘ {A} {⊘} ini⊘ {f} =
   record { g = !A
          ; invR = pf
          }
-    where ⊘→A-unique : morC-unique ⊘ to A
+    where ⊘→A-unique : exist-unique (morC ⊘ A)
           ⊘→A-unique = initial.proof ini⊘ {A}
           !A : morC ⊘ A
-          !A = morC-unique_to_.m (⊘→A-unique)
-          ⊘→⊘-unique : morC-unique ⊘ to ⊘
+          !A = exist-unique.! (⊘→A-unique)
+          ⊘→⊘-unique : exist-unique (morC ⊘ ⊘)
           ⊘→⊘-unique = initial.proof ini⊘ {⊘}
           pf : f ∘ !A ≡ id ⊘
           pf = unique→id {⊘} {A} { !A} {f} ⊘→⊘-unique
@@ -428,11 +442,11 @@ split-epic-A→⊘ {A} {⊘} ini⊘ {f} =
          ≡⟨ sym h≡m ⟩
           h
          ∎
-  where pf : morC-unique T to one
+  where pf : exist-unique (morC T one)
         pf = terminal.proof t {T}
-        m = morC-unique_to_.m pf
-        g≡m = morC-unique_to_.unique pf g
-        h≡m = morC-unique_to_.unique pf h
+        m = exist-unique.! pf
+        g≡m = exist-unique.unique pf g
+        h≡m = exist-unique.unique pf h
         
 -- exercise 2.1.8
 {-compo-unique : {A B C : obC} → morC-unique A to B → morC-unique B to C →
@@ -537,9 +551,9 @@ AxB-unique {A} {B} AXB AXB′ =
         P′→P′-unique : morC-unique P′ to P′
         P′→P′-unique = bproduct-unique-refl AXB′
         g∘f≡idP : g ∘ f ≡ id P
-        g∘f≡idP = unique→id {P} {P′} {f} {g} P→P-unique
+        g∘f≡idP = morC-unique→id {P} {P′} {f} {g} P→P-unique
         f∘g≡idP′ : f ∘ g ≡ id P′
-        f∘g≡idP′ = unique→id {P′} {P} {g} {f} P′→P′-unique
+        f∘g≡idP′ = morC-unique→id {P′} {P} {g} {f} P′→P′-unique
 
 -- Exercise 2.2.3.
 {- Show that product constructions are associative: for any objects A, B, C,
@@ -551,8 +565,8 @@ x-assoc : {A B C : obC} →
 x-assoc {A}{B}{C} {BxC} {Ax[BxC]} {AxB} {[AxB]xC} =
   record { f = f
          ; g = g
-         ; proof = record { invR = unique→id {_}{_} {g} {f} [AxB]xC→[AxB]xC-unique
-                          ; invL = unique→id {_}{_} {f} {g} Ax[BxC]→Ax[BxC]-unique
+         ; proof = record { invR = morC-unique→id {_}{_} {g} {f} [AxB]xC→[AxB]xC-unique
+                          ; invL = morC-unique→id {_}{_} {f} {g} Ax[BxC]→Ax[BxC]-unique
                           }
          }
   where AxB-obj = _X_.obj AxB
@@ -597,8 +611,8 @@ x-assoc {A}{B}{C} {BxC} {Ax[BxC]} {AxB} {[AxB]xC} =
 ≅-sym-bproduct {A}{B} {AxB} {BxA} =
   record { f = f
          ; g = g
-         ; proof = record { invR = unique→id {_}{_} {g} {f} BxA→BxA-unique
-                          ; invL = unique→id {_}{_} {f} {g} AxB→AxB-unique
+         ; proof = record { invR = morC-unique→id {_}{_} {g} {f} BxA→BxA-unique
+                          ; invL = morC-unique→id {_}{_} {f} {g} AxB→AxB-unique
                           }
          }
   where AxB-obj = _X_.obj AxB
@@ -633,16 +647,16 @@ A≅1xA {A}{one} {1xA} {t} =
   where 1xA-obj = _X_.obj 1xA
         π₂-1xA : morC 1xA-obj A
         π₂-1xA = _X_.π₂ 1xA
-        !A-unique : morC-unique A to one
+        !A-unique : exist-unique (morC A one)
         !A-unique = terminal.proof t {A}
         !A : morC A one
-        !A = morC-unique_to_.m !A-unique
+        !A = exist-unique.! !A-unique
         ⟨!A,idA⟩ : morC A 1xA-obj
         ⟨!A,idA⟩ = morC-unique_to_.m (proj₁ (_X_.proof 1xA {A} { !A} {id A}))
-        1→1-unique : morC-unique one to one
+        1→1-unique : exist-unique (morC one one)
         1→1-unique = terminal.proof t {one}
         p1 : ⟨!A,idA⟩ ∘ π₂-1xA ≡ id 1xA-obj
-        p1 = unique→id (bproduct-unique-refl 1xA)
+        p1 = morC-unique→id (bproduct-unique-refl 1xA)
         p2 : π₂-1xA ∘ ⟨!A,idA⟩ ≡ id A
         p2 = proj₂ (proj₂ (_X_.proof 1xA {A} { !A}{id A}))
 
@@ -671,7 +685,7 @@ mor-x f f′ {AxA′} {BxB′} = < f ∘ (_X_.π₁ AxA′) , f′ ∘ (_X_.π�
         ⟨idAxidA′⟩ : morC AxA′-obj AxA′-obj
         ⟨idAxidA′⟩ = ⟨ idAxidA′ ⟩
         p1 : ⟨idAxidA′⟩ ∘ (id AxA′-obj) ≡ id AxA′-obj
-        p1 = unique→id (bproduct-unique-refl AxA′)
+        p1 = morC-unique→id (bproduct-unique-refl AxA′)
         p2 : ⟨idAxidA′⟩ ∘ (id AxA′-obj) ≡ ⟨idAxidA′⟩
         p2 = idR
 
@@ -811,9 +825,9 @@ A+B-unique {A}{B} {P}{P′} =
         P′→P′-unique : morC-unique P′-obj to P′-obj
         P′→P′-unique = cproduct-unique-refl P′
         p1 : (f ∘ g) ≡ id P′-obj
-        p1 = unique→id P′→P′-unique
+        p1 = morC-unique→id P′→P′-unique
         p2 : (g ∘ f) ≡ id P-obj
-        p2 = unique→id P→P-unique
+        p2 = morC-unique→id P→P-unique
 
 -- Theorem 2.2.13.
 {- In a category C with binary coproducts, any object A is isomorphoc to ⊘ + A -}
@@ -829,7 +843,7 @@ A≅⊘+A {A}{⊘} {init} {⊘+A} =
         f : morC A ⊘+A-obj
         f = _+_.ι₂ ⊘+A
         h : morC ⊘ A
-        h = morC-unique_to_.m (initial.proof init {A})
+        h = exist-unique.! (initial.proof init {A})
         ⊘+A→A-unique : morC-unique ⊘+A-obj to A
         ⊘+A→A-unique = proj₁ (_+_.proof ⊘+A {A} {h} {id A})
         g : morC ⊘+A-obj A
@@ -837,7 +851,7 @@ A≅⊘+A {A}{⊘} {init} {⊘+A} =
         ⊘+A→⊘+A-unique : morC-unique ⊘+A-obj to ⊘+A-obj
         ⊘+A→⊘+A-unique = cproduct-unique-refl ⊘+A
         p1 : f ∘ g ≡ id ⊘+A-obj
-        p1 = unique→id ⊘+A→⊘+A-unique
+        p1 = morC-unique→id ⊘+A→⊘+A-unique
         p2 : g ∘ f ≡ id A
         p2 = proj₂ (proj₂ (_+_.proof ⊘+A {A} {h} {id A}))
 
@@ -867,9 +881,9 @@ cproduct-sym {A}{B} {A+B}{B+A} =
         B+A→B+A-unique : morC-unique B+A-obj to B+A-obj
         B+A→B+A-unique = cproduct-unique-refl B+A
         p1 : f ∘ g ≡ id B+A-obj
-        p1 = unique→id B+A→B+A-unique
+        p1 = morC-unique→id B+A→B+A-unique
         p2 : g ∘ f ≡ id A+B-obj
-        p2 = unique→id A+B→A+B-unique
+        p2 = morC-unique→id A+B→A+B-unique
 
 -- Exercise 2.2.15.
 {- Show that the coproduct constructions are assosiative -}
@@ -912,22 +926,9 @@ cproduct-sym {A}{B} {A+B}{B+A} =
         A+[B+C]→A+[B+C]-unique : morC-unique A+[B+C]-obj to A+[B+C]-obj
         A+[B+C]→A+[B+C]-unique = cproduct-unique-refl A+[B+C]
         p1 : f ∘ g ≡ id [A+B]+C-obj
-        p1 = unique→id [A+B]+C→[A+B]+C-unique
+        p1 = morC-unique→id [A+B]+C→[A+B]+C-unique
         p2 : g ∘ f ≡ id A+[B+C]-obj
-        p2 = unique→id A+[B+C]→A+[B+C]-unique
-
-{-
-  record exist-unique-P {A : Set} (P : A → Set) : Set where
-  field
-    ! : A
-    proof : P !
-    unique : (o : A) → P o → o ≡ !
-
-  record morC-unique_to_ (A B : obC) : Set where
-  field
-    m : morC A B
-    unique : (m′ : morC A B) → m′ ≡ m
--}
+        p2 = morC-unique→id A+[B+C]→A+[B+C]-unique
 
 record pullback {A B C : obC} (f : morC A C) (g : morC B C) : Set where
   field
